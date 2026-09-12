@@ -1,0 +1,33 @@
+# Hemligheter
+secrets/
+.env
+.env.*
+*.pem
+*.key
+*-firebase-adminsdk-*.json
+firebase-service-account.json
+
+# Lokal databas
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Pythonmiljö och cache
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editor
+.idea/
+.vscode/
+
+# Tillfälligt
+*.log
+*.tmp
+*.bak
+*.zip

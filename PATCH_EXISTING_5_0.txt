@@ -1,0 +1,1 @@
+Kopiera currency.py och main.py. Behåll din fungerande notifications.py från 5.0.1 om den inte finns i paketet.
