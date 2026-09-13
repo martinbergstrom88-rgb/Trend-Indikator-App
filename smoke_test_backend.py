@@ -3,9 +3,10 @@ from app.main import app
 REQUIRED_ROUTES = {
     '/health',
     '/api/v1/catalog',
-    '/api/v1/holding-records',
     '/api/v1/favorites',
     '/api/v1/market',
+    '/api/v1/tickers',
+    '/api/v1/tickers/{symbol}',
     '/api/v1/holdings',
     '/api/v1/notifications/status',
     '/api/v1/notifications/active',

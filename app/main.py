@@ -11,7 +11,7 @@ from .models import (AlertCreate, AppSetting, Holding, HoldingUpsert, PriceAlert
                      SignalHistory, Ticker, TickerCreate, TickerPatch, DeviceToken, DeviceTokenCreate, SignalAlert, SignalAlertUpdate, PriceAlertUpdate)
 from .seed import seed
 from .notifications import firebase_ready, start_worker, stop_worker, check_alerts
-from .routers import health, market
+from .routers import health, market, tickers
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -26,50 +26,11 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Trend Indikator API", version="5.2.4", lifespan=lifespan)
 app.include_router(health.router)
 app.include_router(market.router)
+app.include_router(tickers.router)
 app.add_middleware(CORSMiddleware, allow_origins=get_settings().cors_origin_list,
                    allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 from .services.market_payload import market_payload
-
-@app.get("/api/v1/tickers/{symbol}")
-def ticker_detail(symbol: str, refresh: bool = False, session: Session = Depends(get_session)):
-    row = session.get(Ticker, symbol.upper())
-    if not row: raise HTTPException(404, "Tickern finns inte")
-    history = session.exec(select(SignalHistory).where(SignalHistory.ticker_symbol == row.symbol).order_by(SignalHistory.changed_at.desc())).all()
-    holding = session.exec(select(Holding).where(Holding.ticker_symbol == row.symbol)).first()
-    return {**market_payload(row, refresh, session), "signal_history": history,
-            "holding": holding.model_dump() if holding else None,
-            "tradingview_url": f"https://www.tradingview.com/chart/?symbol={row.tradingview_symbol}" if row.tradingview_symbol else None}
-
-@app.post("/api/v1/tickers", response_model=Ticker, status_code=201)
-def add_ticker(data: TickerCreate, session: Session = Depends(get_session)):
-    symbol = data.symbol.upper().strip()
-    if session.get(Ticker, symbol): raise HTTPException(409, "Tickern finns redan")
-    row = Ticker(**data.model_dump(exclude={"symbol"}), symbol=symbol)
-    session.add(row); session.commit(); session.refresh(row); return row
-
-@app.patch("/api/v1/tickers/{symbol}", response_model=Ticker)
-def patch_ticker(symbol: str, data: TickerPatch, session: Session = Depends(get_session)):
-    row = session.get(Ticker, symbol.upper())
-    if not row: raise HTTPException(404, "Tickern finns inte")
-    for key, value in data.model_dump(exclude_unset=True).items(): setattr(row, key, value)
-    session.add(row); session.commit(); session.refresh(row); return row
-
-@app.delete("/api/v1/tickers/{symbol}", status_code=204)
-def delete_ticker(symbol: str, session: Session = Depends(get_session)):
-    symbol = symbol.upper()
-    row = session.get(Ticker, symbol)
-    if not row:
-        raise HTTPException(404, "Tickern finns inte")
-    holding = session.exec(select(Holding).where(Holding.ticker_symbol == symbol)).first()
-    if holding:
-        session.delete(holding)
-    for alert in session.exec(select(PriceAlert).where(PriceAlert.ticker_symbol == symbol)).all():
-        session.delete(alert)
-    for history in session.exec(select(SignalHistory).where(SignalHistory.ticker_symbol == symbol)).all():
-        session.delete(history)
-    session.delete(row)
-    session.commit()
 
 @app.get("/api/v1/holdings")
 def holdings(refresh: bool = False, session: Session = Depends(get_session)):
