@@ -1,4 +1,11 @@
+"""Initial data for a completely new Trading Indicator database.
+
+Default tickers are inserted only when the ticker table is empty. This keeps
+products intentionally removed by the user from being recreated on restart.
+"""
+
 from sqlmodel import Session, select
+
 from .models import AppSetting, Ticker
 
 DEFAULTS = [
@@ -24,10 +31,27 @@ DEFAULTS = [
     ("^FTSE", "FTSE 100", "index", "GBP", "FTSE:UKX"),
 ]
 
+
 def seed(session: Session) -> None:
-    for symbol, name, asset_type, currency, tv in DEFAULTS:
-        if session.get(Ticker, symbol) is None:
-            session.add(Ticker(symbol=symbol, name=name, asset_type=asset_type, currency=currency, tradingview_symbol=tv, is_favorite=symbol == "BTC-USD"))
+    """Seed defaults once, while preserving all later user changes."""
+    database_has_tickers = session.exec(select(Ticker.symbol).limit(1)).first() is not None
+
+    if not database_has_tickers:
+        session.add_all(
+            [
+                Ticker(
+                    symbol=symbol,
+                    name=name,
+                    asset_type=asset_type,
+                    currency=currency,
+                    tradingview_symbol=tradingview_symbol,
+                    is_favorite=symbol == "BTC-USD",
+                )
+                for symbol, name, asset_type, currency, tradingview_symbol in DEFAULTS
+            ]
+        )
+
     if session.get(AppSetting, "signal_alerts_enabled") is None:
         session.add(AppSetting(key="signal_alerts_enabled", value="true"))
+
     session.commit()
