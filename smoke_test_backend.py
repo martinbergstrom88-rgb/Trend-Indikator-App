@@ -9,9 +9,13 @@ REQUIRED_ROUTES = {
     '/api/v1/tickers/{symbol}',
     '/api/v1/holdings',
     '/api/v1/holdings/{symbol}',
+    '/api/v1/devices',
     '/api/v1/notifications/status',
     '/api/v1/notifications/active',
     '/api/v1/notifications/check',
+    '/api/v1/tickers/{symbol}/notifications',
+    '/api/v1/tickers/{symbol}/notifications/price',
+    '/api/v1/tickers/{symbol}/notifications/signal',
 }
 
 existing_routes = set(app.openapi()['paths'])
