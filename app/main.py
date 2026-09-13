@@ -26,25 +26,7 @@ app = FastAPI(title="Trend Indikator API", version="5.2.4", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=get_settings().cors_origin_list,
                    allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-def market_payload(ticker: Ticker, force: bool, session: Session) -> dict:
-    try:
-        data = snapshot_dict(ticker.symbol, force)
-        current = data.get("signal")
-        latest = session.exec(
-            select(SignalHistory)
-            .where(SignalHistory.ticker_symbol == ticker.symbol)
-            .order_by(SignalHistory.changed_at.desc())
-        ).first()
-        if current and (latest is None or latest.new_signal != current):
-            session.add(SignalHistory(
-                ticker_symbol=ticker.symbol,
-                old_signal=latest.new_signal if latest else data.get("previous_signal"),
-                new_signal=current,
-            ))
-            session.commit()
-        return {**ticker.model_dump(), **data}
-    except Exception as exc:
-        return {**ticker.model_dump(), "error": str(exc)}
+from .services.market_payload import market_payload
 
 @app.get("/health")
 def health(): return {"status": "ok", "service": "Trend Indikator API", "version": app.version}
