@@ -11,7 +11,6 @@ from .models import (AlertCreate, AppSetting, Holding, HoldingUpsert, PriceAlert
                      SignalHistory, Ticker, TickerCreate, TickerPatch, DeviceToken, DeviceTokenCreate, SignalAlert, SignalAlertUpdate, PriceAlertUpdate)
 from .seed import seed
 from .notifications import firebase_ready, start_worker, stop_worker, check_alerts
-from .routers import health
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -24,11 +23,13 @@ async def lifespan(app: FastAPI):
     stop_worker()
 
 app = FastAPI(title="Trend Indikator API", version="5.2.4", lifespan=lifespan)
-app.include_router(health.router)
 app.add_middleware(CORSMiddleware, allow_origins=get_settings().cors_origin_list,
                    allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 from .services.market_payload import market_payload
+
+@app.get("/health")
+def health(): return {"status": "ok", "service": "Trend Indikator API", "version": app.version}
 
 @app.get("/api/v1/catalog")
 def catalog(favorite: bool | None = None, asset_type: str | None = None,
