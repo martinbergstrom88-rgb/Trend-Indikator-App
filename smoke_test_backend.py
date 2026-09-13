@@ -8,6 +8,7 @@ REQUIRED_ROUTES = {
     '/api/v1/tickers',
     '/api/v1/tickers/{symbol}',
     '/api/v1/holdings',
+    '/api/v1/holdings/{symbol}',
     '/api/v1/notifications/status',
     '/api/v1/notifications/active',
     '/api/v1/notifications/check',
